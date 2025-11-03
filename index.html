@@ -1,0 +1,66 @@
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Python Quest - Master Python Daily</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              primary: '#34D399', // Emerald 400
+              secondary: '#A78BFA', // Violet 400
+              background: '#1F2937', // Gray 800
+              surface: '#374151', // Gray 700
+              textPrimary: '#F9FAFB', // Gray 50
+              textSecondary: '#D1D5DB', // Gray 300
+              correct: '#34D399', // Emerald 400
+              incorrect: '#F87171', // Red 400
+            },
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+            },
+            animation: {
+              'fade-in': 'fadeIn 0.5s ease-in-out',
+              'slide-in': 'slideIn 0.5s ease-in-out',
+              'star-pop': 'starPop 0.6s ease-out forwards',
+            },
+            keyframes: {
+              fadeIn: {
+                '0%': { opacity: 0 },
+                '100%': { opacity: 1 },
+              },
+              slideIn: {
+                '0%': { transform: 'translateY(20px)', opacity: 0 },
+                '100%': { transform: 'translateY(0)', opacity: 1 },
+              },
+              starPop: {
+                '0%': { transform: 'scale(0) rotate(0deg)', opacity: 0 },
+                '50%': { transform: 'scale(1.5) rotate(15deg)', opacity: 1 },
+                '100%': { transform: 'scale(1) rotate(0deg)', opacity: 1 },
+              }
+            }
+          }
+        }
+      }
+    </script>
+    <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
+  <script type="importmap">
+{
+  "imports": {
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.28.0"
+  }
+}
+</script>
+</head>
+  <body class="bg-background text-textPrimary antialiased">
+    <div id="root"></div>
+  </body>
+</html>
