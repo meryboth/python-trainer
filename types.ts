@@ -24,8 +24,17 @@ export interface Question {
   explanation: string;
 }
 
+export interface LevelStats {
+  unlocked: boolean;
+  highScore: number;
+  attempts: number;
+  totalCorrect: number;
+  totalIncorrect: number;
+}
+
 export interface PlayerProgress {
-  level: Level;
+  currentLevel: Level;
   totalStars: number;
   seenQuestions: string[];
+  levelStats: Record<Level, LevelStats>;
 }

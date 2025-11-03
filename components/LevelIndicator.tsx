@@ -4,13 +4,13 @@ import { LEVELS, QUESTIONS_PER_LEVEL } from '../constants';
 import { StarIcon } from './Icons';
 
 interface LevelIndicatorProps {
-  level: Level;
+  currentLevel: Level;
   totalStars: number;
   questionIndex: number; // 0-based index of current question
 }
 
-const LevelIndicator: React.FC<LevelIndicatorProps> = ({ level, totalStars, questionIndex }) => {
-  const levelInfo = LEVELS[level];
+const LevelIndicator: React.FC<LevelIndicatorProps> = ({ currentLevel, totalStars, questionIndex }) => {
+  const levelInfo = LEVELS[currentLevel];
   
   const progressPercentage = ((questionIndex + 1) / QUESTIONS_PER_LEVEL) * 100;
 

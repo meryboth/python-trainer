@@ -1,6 +1,7 @@
-import { Level } from './types';
+import { Level, LevelStats } from './types';
 
 export const QUESTIONS_PER_LEVEL = 10;
+export const PASSING_SCORE = 7; // User needs to get at least 7 questions right to unlock the next level.
 
 export const LEVELS: Record<Level, { name: string; description: string; next: Level | null }> = {
   [Level.Junior_1]: { name: 'Junior I', description: 'fundamental concepts like variables, basic data types (strings, integers), and print statements.', next: Level.Junior_2 },
@@ -11,3 +12,14 @@ export const LEVELS: Record<Level, { name: string; description: string; next: Le
   [Level.Senior_2]: { name: 'Senior II', description: 'concurrency, performance optimization, and standard library modules like collections or itertools.', next: Level.Principal },
   [Level.Principal]: { name: 'Principal', description: 'complex architectural patterns, metaprogramming, and Python internals.', next: null },
 };
+
+export const initialLevelStats = Object.values(Level).reduce((acc, level) => {
+    acc[level] = {
+        unlocked: level === Level.Junior_1,
+        highScore: 0,
+        attempts: 0,
+        totalCorrect: 0,
+        totalIncorrect: 0,
+    };
+    return acc;
+}, {} as Record<Level, LevelStats>);

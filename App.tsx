@@ -2,21 +2,25 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { GameState, Level, PlayerProgress, Question } from './types';
 import { generatePythonQuestion, generateLevelSummary } from './services/geminiService';
-import { LEVELS, QUESTIONS_PER_LEVEL } from './constants';
+import { LEVELS, QUESTIONS_PER_LEVEL, initialLevelStats, PASSING_SCORE } from './constants';
 import SplashScreen from './components/SplashScreen';
 import LevelIndicator from './components/LevelIndicator';
 import QuestionCard from './components/QuestionCard';
 import SummaryScreen from './components/SummaryScreen';
+import ProgressModal from './components/ProgressModal';
 
 const App: React.FC = () => {
   const [gameState, setGameState] = useState<GameState>(GameState.SPLASH);
   const [progress, setProgress] = useState<PlayerProgress>({
-    level: Level.Junior_1,
+    currentLevel: Level.Junior_1,
     totalStars: 0,
     seenQuestions: [],
+    levelStats: initialLevelStats,
   });
   const [currentQuestion, setCurrentQuestion] = useState<Question | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [isProgressModalOpen, setIsProgressModalOpen] = useState(false);
+
 
   // State for current level progress
   const [questionIndex, setQuestionIndex] = useState(0); // 0 to 9
@@ -32,7 +36,27 @@ const App: React.FC = () => {
       const savedProgress = localStorage.getItem('pythonQuestProgress');
       if (savedProgress) {
         const parsed = JSON.parse(savedProgress);
-        if (parsed.level && typeof parsed.totalStars === 'number') {
+        // Migration for old data structure
+        if (parsed.level && !parsed.levelStats) {
+            const migratedStats = { ...initialLevelStats };
+            let levelReached = false;
+            for (const level of Object.values(Level)) {
+                if (levelReached) {
+                    migratedStats[level].unlocked = false;
+                } else {
+                    migratedStats[level].unlocked = true;
+                }
+                if (level === parsed.level) {
+                    levelReached = true;
+                }
+            }
+            setProgress({
+                currentLevel: parsed.level,
+                totalStars: parsed.totalStars,
+                seenQuestions: parsed.seenQuestions || [],
+                levelStats: migratedStats,
+            });
+        } else if (parsed.currentLevel && parsed.levelStats) {
            setProgress(parsed);
         } else {
            localStorage.removeItem('pythonQuestProgress');
@@ -71,7 +95,7 @@ const App: React.FC = () => {
     setQuestionIndex(0);
     setLevelQuestions([]);
     setLevelCorrectAnswers(0);
-    setProgress(prev => ({ ...prev, level }));
+    setProgress(prev => ({ ...prev, currentLevel: level }));
     fetchQuestion(level);
   };
 
@@ -107,12 +131,36 @@ const App: React.FC = () => {
 
     if (questionIndex < QUESTIONS_PER_LEVEL - 1) {
       setQuestionIndex(prev => prev + 1);
-      fetchQuestion(progress.level);
+      fetchQuestion(progress.currentLevel);
     } else {
       setGameState(GameState.LOADING);
       try {
         const summary = await generateLevelSummary([...levelQuestions, currentQuestion!]);
         setLevelSummary(summary);
+        
+        const currentLevel = progress.currentLevel;
+        const score = levelCorrectAnswers;
+
+        setProgress(prev => {
+            const newStats = { ...prev.levelStats };
+            const currentLevelStats = newStats[currentLevel];
+            
+            newStats[currentLevel] = {
+                ...currentLevelStats,
+                attempts: currentLevelStats.attempts + 1,
+                totalCorrect: currentLevelStats.totalCorrect + score,
+                totalIncorrect: currentLevelStats.totalIncorrect + (QUESTIONS_PER_LEVEL - score),
+                highScore: Math.max(currentLevelStats.highScore, score),
+            };
+
+            const nextLevel = LEVELS[currentLevel].next;
+            if (score >= PASSING_SCORE && nextLevel) {
+                newStats[nextLevel] = { ...newStats[nextLevel], unlocked: true };
+            }
+
+            return { ...prev, levelStats: newStats };
+        });
+
         setGameState(GameState.SUMMARY);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'An unknown error occurred');
@@ -122,11 +170,11 @@ const App: React.FC = () => {
   };
   
   const handleStartNextLevel = () => {
-    const currentLevelInfo = LEVELS[progress.level];
+    const currentLevelInfo = LEVELS[progress.currentLevel];
     const nextLevel = currentLevelInfo.next;
 
-    if (nextLevel) {
-      setProgress(prev => ({ ...prev, level: nextLevel, }));
+    if (nextLevel && progress.levelStats[nextLevel].unlocked) {
+      setProgress(prev => ({ ...prev, currentLevel: nextLevel, }));
       setQuestionIndex(0);
       setLevelQuestions([]);
       setLevelCorrectAnswers(0);
@@ -140,14 +188,14 @@ const App: React.FC = () => {
   const renderContent = () => {
     switch (gameState) {
       case GameState.SPLASH:
-        return <SplashScreen onStart={handleStart} currentLevel={progress.level} />;
+        return <SplashScreen onStart={handleStart} onOpenProgress={() => setIsProgressModalOpen(true)} currentLevel={progress.currentLevel} />;
       case GameState.LOADING:
         return <div className="flex items-center justify-center h-full"><div className="w-16 h-16 border-4 border-dashed rounded-full animate-spin border-primary"></div></div>;
       case GameState.PLAYING:
       case GameState.ANSWERED:
         return currentQuestion && (
             <div className="flex flex-col items-center gap-8 w-full px-4">
-              <LevelIndicator level={progress.level} totalStars={progress.totalStars} questionIndex={questionIndex} />
+              <LevelIndicator currentLevel={progress.currentLevel} totalStars={progress.totalStars} questionIndex={questionIndex} />
               <QuestionCard 
                 question={currentQuestion}
                 onAnswer={handleAnswer}
@@ -166,10 +214,10 @@ const App: React.FC = () => {
             </div>
         );
       case GameState.SUMMARY:
-          const hasNextLevel = !!LEVELS[progress.level]?.next;
+          const hasNextLevel = !!LEVELS[progress.currentLevel]?.next && progress.levelStats[LEVELS[progress.currentLevel].next!].unlocked;
           return <SummaryScreen 
                     summaryMarkdown={levelSummary} 
-                    level={progress.level} 
+                    level={progress.currentLevel} 
                     score={levelCorrectAnswers} 
                     onNextLevel={hasNextLevel ? handleStartNextLevel : () => setGameState(GameState.SPLASH)}
                     hasNextLevel={hasNextLevel}
@@ -180,7 +228,7 @@ const App: React.FC = () => {
             <h2 className="text-2xl text-incorrect mb-4">Oops! Something went wrong.</h2>
             <p className="text-textSecondary mb-6">{error}</p>
             <button
-              onClick={() => fetchQuestion(progress.level)}
+              onClick={() => fetchQuestion(progress.currentLevel)}
               className="px-6 py-2 bg-primary text-background font-bold rounded-lg hover:bg-emerald-500 transition-colors"
             >
               Try Again
@@ -194,6 +242,7 @@ const App: React.FC = () => {
 
   return (
     <main className="min-h-screen flex flex-col items-center justify-center p-4 sm:p-6 lg:p-8">
+      {isProgressModalOpen && <ProgressModal onClose={() => setIsProgressModalOpen(false)} stats={progress.levelStats} totalStars={progress.totalStars} />}
       {renderContent()}
     </main>
   );

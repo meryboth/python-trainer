@@ -6,10 +6,11 @@ import { LEVELS } from '../constants';
 
 interface SplashScreenProps {
   onStart: (level: Level) => void;
+  onOpenProgress: () => void;
   currentLevel: Level;
 }
 
-const SplashScreen: React.FC<SplashScreenProps> = ({ onStart, currentLevel }) => {
+const SplashScreen: React.FC<SplashScreenProps> = ({ onStart, onOpenProgress, currentLevel }) => {
   const [selectedLevel, setSelectedLevel] = useState<Level>(currentLevel);
 
   return (
@@ -42,12 +43,20 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onStart, currentLevel }) =>
         </select>
       </div>
 
-      <button
-        onClick={() => onStart(selectedLevel)}
-        className="px-8 py-4 bg-primary text-background font-bold text-lg rounded-xl shadow-lg hover:bg-emerald-500 transition-transform transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-primary focus:ring-opacity-50"
-      >
-        Start Challenge
-      </button>
+      <div className="flex flex-col sm:flex-row gap-4 items-center">
+        <button
+          onClick={() => onStart(selectedLevel)}
+          className="px-8 py-4 bg-primary text-background font-bold text-lg rounded-xl shadow-lg hover:bg-emerald-500 transition-transform transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-primary focus:ring-opacity-50"
+        >
+          Start Challenge
+        </button>
+        <button
+            onClick={onOpenProgress}
+            className="px-6 py-3 bg-surface text-textSecondary font-semibold rounded-xl hover:bg-gray-600 transition-colors"
+        >
+            View My Progress
+        </button>
+      </div>
     </div>
   );
 };
